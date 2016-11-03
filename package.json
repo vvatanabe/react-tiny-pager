@@ -1,0 +1,36 @@
+{
+  "name": "react-tiny-pager",
+  "version": "0.0.1",
+  "description": "",
+  "main": "dist/react-tiny-pager.js",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com:vvatanabe/react-tiny-pager.git"
+  },
+  "scripts": {
+    "test": "mocha --timeout 10000 --compilers ts:espower-typescript/guess test/test*.ts",
+    "test-cov": "istanbul cover ./node_modules/mocha/bin/_mocha --report lcovonly -- -R spec test/**/test*.js",
+    "coveralls": "cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js",
+    "build": "npm run build-tsc && npm run build-dist && npm run build-minify",
+    "build-dist": "browserify src/index.js -o dist/react-tiny-pager.js",
+    "build-minify": "uglifyjs dist/react-tiny-pager.js -o dist/react-tiny-pager.min.js",
+    "build-demo": "browserify demo/index.js -o demo/bundle.js",
+    "build-tsc": "tsc --removeComments",
+    "build-tsd": "tsc -d"
+  },
+  "author": "vvatanabe",
+  "license": "MIT",
+  "dependencies": {
+    "react": "^15.3.2"
+  },
+  "devDependencies": {
+    "browserify": "^13.0.1",
+    "coveralls": "^2.11.9",
+    "espower-typescript": "^5.0.1",
+    "istanbul": "^0.4.3",
+    "mocha": "^2.5.3",
+    "power-assert": "^1.4.1",
+    "typescript": "^2.0.6",
+    "uglify-js": "^2.6.2"
+  }
+}
