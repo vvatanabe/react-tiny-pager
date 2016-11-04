@@ -13,16 +13,16 @@ namespace DefaultClassName {
 interface TinyPagerProps extends React.Props<{}> {
 		current: number;
 		total: number;
-		visible: number;
-		fixed: number;
-		title: {
+		visiblePages: number;
+		fixePages: number;
+		titles: {
 			prev: string;
 			next: string;
 			ellipsis: string;
 		}
-		onChange(current: number);
-		onMouseOver(current: number);
-		onMouseOut(current: number);
+		onChangeTo(page: number);
+		onMouseOverTo(page: number);
+		onMouseOutTo(page: number);
 }
 
 const TinyPager: React.StatelessComponent<TinyPagerProps> = props => {
@@ -35,22 +35,22 @@ const TinyPager: React.StatelessComponent<TinyPagerProps> = props => {
 		handleChangePage(props.current + 1);
 	}
 
-	function handleChangePage(num: number) {
-		props.onChange(num);
+	function handleChangePage(page: number) {
+		props.onChangeTo(page);
 	}
 
-	function handleMouseOver(num: number) {
-		props.onMouseOver(num);
+	function handleMouseOver(page: number) {
+		props.onMouseOverTo(page);
 	}
 
-	function handleMouseOut(num: number) {
-		props.onMouseOut(num);
+	function handleMouseOut(page: number) {
+		props.onMouseOutTo(page);
 	}
 
 	return (
 		<ul className={DefaultClassName.PANEL}>
 			<Page
-				title={props.title.prev}
+				title={props.titles.prev}
 				classNames={[DefaultClassName.PAGE_PREV]}
 				disabled={props.current === 1}
 				onClick={handlePrevPage}
@@ -77,9 +77,9 @@ const TinyPager: React.StatelessComponent<TinyPagerProps> = props => {
 
 TinyPager.defaultProps.current = 1;
 TinyPager.defaultProps.total = 20;
-TinyPager.defaultProps.visible = 5;
-TinyPager.defaultProps.fixed = 1;
-TinyPager.defaultProps.title = {
+TinyPager.defaultProps.visiblePages = 5;
+TinyPager.defaultProps.fixePages = 1;
+TinyPager.defaultProps.titles = {
 	prev: 'prev',
 	next: 'next',
 	ellipsis: '...'
@@ -91,12 +91,12 @@ interface PageProps extends React.Props<{}> {
 		selected?: boolean;
 		title: string;
 		classNames: string[];
-		onClick(current: number);
-		onMouseOver(current: number);
-		onMouseOut(current: number);
+		onClick(page: number);
+		onMouseOver?(page: number);
+		onMouseOut?(page: number);
 }
 
-const Page: React.StatelessComponent<PageProps> = (props) => (
+const Page: React.StatelessComponent<PageProps> = props => (
 	<li
 		key={props.index}
 		className={props.classNames.join(' ')}
