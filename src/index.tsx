@@ -1,6 +1,6 @@
 import * as React from 'react';
 
-namespace DefaultClassName {
+namespace ClassName {
 	export const PANEL =         'react-tiny-pager-panel'
 	export const PAGE =          'react-tiny-pager-panel__page'
 	export const PAGE_PREV =     'react-tiny-pager-panel__page-prev'
@@ -10,64 +10,192 @@ namespace DefaultClassName {
 	export const PAGE_DISABLED = 'react-tiny-pager-panel__page-disabled'
 }
 
-interface TinyPagerProps extends React.Props<{}> {
-		current: number;
-		total: number;
-		visiblePages: number;
-		fixePages: number;
-		titles: {
-			prev: string;
-			next: string;
-			ellipsis: string;
-		}
-		onChangeTo(page: number);
-		onMouseOverTo(page: number);
-		onMouseOutTo(page: number);
+export interface TinyPagerStateProps extends React.Props<{}> {
+	current?: number;
 }
+
+export interface TinyPagerDispatchProps extends React.Props<{}> {
+	onChangeTo?(page: number);
+	onMouseOverTo?(page: number);
+	onMouseOutTo?(page: number);
+}
+
+export type TinyPagerProps = {
+	total?: number;
+	visiblePages?: number;
+	fixePages?: number;
+	titles?: {
+		prev?: string;
+		next?: string;
+		ellipsis?: string;
+	}
+} & TinyPagerStateProps & TinyPagerDispatchProps;
 
 const TinyPager: React.StatelessComponent<TinyPagerProps> = props => {
 
+	const {
+		current,
+		total,
+		visiblePages,
+		fixePages,
+		titles,
+		onChangeTo,
+		onMouseOverTo,
+		onMouseOutTo
+	} = props;
+
 	function handlePrevPage() {
-		handleChangePage(props.current - 1);
+		handleChangePage(current - 1);
 	}
 
 	function handleNextPage() {
-		handleChangePage(props.current + 1);
+		handleChangePage(current + 1);
 	}
 
-	function handleChangePage(page: number) {
-		props.onChangeTo(page);
+	function handleChangePage(newPage: number) {
+		onChangeTo(newPage);
 	}
 
 	function handleMouseOver(page: number) {
-		props.onMouseOverTo(page);
+		onMouseOverTo(page);
 	}
 
 	function handleMouseOut(page: number) {
-		props.onMouseOutTo(page);
+		onMouseOutTo(page);
+	}
+
+	function isDisabled(): boolean {
+		return current === 1 || current === props.total;
+	}
+
+	function isSelected(page): boolean {
+		return current === page;
+	}
+
+	function isEven(num: number): boolean {
+			return num % 2 === 0;
+	}
+
+	function calcVisibleRange(): {
+		from: number,
+		to: number
+	} {
+		const startEllipsisPoint = fixePages + 2;
+		const endEllipsisPoint = total - startEllipsisPoint;
+		const startDisplayPage = current - (isEven(visiblePages) ? visiblePages / 2 : Math.floor(visiblePages / 2));
+		const endDisplayPage = current + (isEven(visiblePages) ? visiblePages / 2 - 1 : Math.floor(visiblePages / 2));
+		if (startDisplayPage <= startEllipsisPoint && endEllipsisPoint < endDisplayPage) {
+				return {
+					from: 1,
+					to: total
+				}
+		} else if (startDisplayPage < 1 && endDisplayPage < endEllipsisPoint) {
+			return {
+				from: 1,
+				to: visiblePages
+			}
+		} else if (startDisplayPage <= startEllipsisPoint && endDisplayPage <= endEllipsisPoint) {
+			return {
+				from: 1,
+				to: endDisplayPage
+			}
+		} else if (startEllipsisPoint < startDisplayPage && props.total <= endDisplayPage) {
+			return {
+				from: total - props.visiblePages + 1,
+				to: total
+			}
+		} else if (startEllipsisPoint < startDisplayPage && endEllipsisPoint < endDisplayPage) {
+			return {
+				from: startDisplayPage,
+				to: total
+			}
+		} else {
+			return {
+				from: startDisplayPage,
+				to: endDisplayPage
+			}
+		}
+	}
+
+	function createPagePropsCollection(): PageProps[] {
+		const visibleRange = calcVisibleRange();
+		const pages: PageProps[] = [];
+		if (visibleRange.from !== 1) {
+			range(1, fixePages).forEach(index => {
+				pages.push({
+					title: `${index}`,
+					className: ClassName.PAGE,
+					selected: isSelected(index),
+					onClick: handlePrevPage,
+					onMouseOver: handleMouseOver,
+					onMouseOut: handleMouseOut
+				});
+			});
+			pages.push({
+				title: titles.ellipsis,
+				className: ClassName.PAGE_ELLIPSIS,
+				onClick: handlePrevPage,
+				onMouseOver: handleMouseOver,
+				onMouseOut: handleMouseOut
+			});
+		}
+		range(visibleRange.from, visibleRange.to).forEach(index => {
+			pages.push({
+				title: `${index}`,
+				className: ClassName.PAGE,
+				selected: isSelected(index),
+				onClick: handlePrevPage,
+				onMouseOver: handleMouseOver,
+				onMouseOut: handleMouseOut
+			});
+		});
+		if (visibleRange.to !== total) {
+			pages.push({
+				title: titles.ellipsis,
+				className: ClassName.PAGE_ELLIPSIS,
+				onClick: handlePrevPage,
+				onMouseOver: handleMouseOver,
+				onMouseOut: handleMouseOut
+			});
+			range(total - fixePages - 1, total).forEach(index => {
+				pages.push({
+					title: `${index}`,
+					className: ClassName.PAGE,
+					selected: isSelected(index),
+					onClick: handlePrevPage,
+					onMouseOver: handleMouseOver,
+					onMouseOut: handleMouseOut
+				});
+			});
+		}
+		return pages;
 	}
 
 	return (
-		<ul className={DefaultClassName.PANEL}>
+		<ul className={ClassName.PANEL}>
 			<Page
-				title={props.titles.prev}
-				classNames={[DefaultClassName.PAGE_PREV]}
-				disabled={props.current === 1}
+				title={titles.prev}
+				className={ClassName.PAGE_PREV}
+				disabled={isDisabled()}
 				onClick={handlePrevPage}
+				onMouseOver={handleMouseOver}
+				onMouseOut={handleMouseOut}
 				/>
 			{
-				pagePropsList().map(pageProps => (
+				createPagePropsCollection().map(pageProps => (
 					<Page
 						index={pageProps.index}
 						title={pageProps.title}
-						classNames={pageProps.classNames}
-						onClick={pageProps.onPage}
+						className={pageProps.className}
+						onClick={handlePrevPage}
+						onMouseOver={handleMouseOver}
+						onMouseOut={handleMouseOut}
 					/>
 				))
 			}
 			<Page
-				title={props.title.next}
-				classNames={[NEXT_CLASS]}
+				title={props.titles.next}
+				className={ClassName.PAGE_NEXT}
 				disabled={props.current === props.total}
 				onClick={handleNextPage}
 				/>
@@ -85,92 +213,6 @@ TinyPager.defaultProps.titles = {
 	ellipsis: '...'
 };
 
-interface PageProps extends React.Props<{}> {
-		index?: number;
-		disabled?: boolean;
-		selected?: boolean;
-		title: string;
-		classNames: string[];
-		onClick(page: number);
-		onMouseOver?(page: number);
-		onMouseOut?(page: number);
-}
-
-const Page: React.StatelessComponent<PageProps> = props => (
-	<li
-		key={props.index}
-		className={props.classNames.join(' ')}
-		onClick={e => props.onClick(props.index)}
-		onMouseOver={e => props.onMouseOver(props.index)}
-		onMouseOut={e => props.onMouseOut(props.index)}
-		>
-		<span>{props.title}</span>
-	</li>
-)
-
-Page.defaultProps.disabled = false;
-Page.defaultProps.selected = false;
-
-function getStartVisiblePage(currentPage: number, visiblePage: number): number {
-	return currentPage - (isEven(visiblePage) ? visiblePage / 2 : Math.floor(visiblePage / 2));
-}
-
-function getEndVisiblePage(currentPage: number, visiblePage: number): number {
-	return currentPage + (isEven(visiblePage) ? visiblePage / 2 - 1 : Math.floor(visiblePage / 2));
-}
-
-function isEven(num: number): boolean {
-		return num % 2 === 0;
-}
-
-interface Range {
-	from: number,
-	to: number
-}
-
-function getVisiblePageRange(
-	currentPage: number,
-	visiblePage: number,
-	fixedPage: number,
-	totalPage: number
-): Range {
-	const startEllipsisPoint = fixedPage + 2;
-	const endEllipsisPoint = totalPage - startEllipsisPoint;
-	const startDisplayPage = getStartVisiblePage(currentPage, visiblePage);
-	const endDisplayPage = getEndVisiblePage(currentPage, visiblePage);
-	if (startDisplayPage <= startEllipsisPoint && endEllipsisPoint < endDisplayPage) {
-			return {
-				from: 1,
-				to: totalPage
-			}
-	} else if (startDisplayPage < 1 && endDisplayPage < endEllipsisPoint) {
-		return {
-			from: 1,
-			to: visiblePage
-		}
-	} else if (startDisplayPage <= startEllipsisPoint && endDisplayPage <= endEllipsisPoint) {
-		return {
-			from: 1,
-			to: endDisplayPage
-		}
-	} else if (startEllipsisPoint < startDisplayPage && totalPage <= endDisplayPage) {
-		return {
-			from: totalPage - visiblePage + 1,
-			to: totalPage
-		}
-	} else if (startEllipsisPoint < startDisplayPage && endEllipsisPoint < endDisplayPage) {
-		return {
-			from: startDisplayPage,
-			to: totalPage
-		}
-	} else {
-		return {
-			from: startDisplayPage,
-			to: endDisplayPage
-		}
-	}
-}
-
 // function* range(begin, end, interval = 1): Iterable<number> {
 //   for (let i = begin; i <= end; i += interval) {
 //     yield i;
@@ -185,57 +227,62 @@ function range(begin, end, interval = 1): number[] {
 	return r;
 }
 
-function pagePropsList(
-	currentPage: number,
-	visiblePage: number,
-	fixedPage: number,
-	totalPage: number,
-	onPageClick: (current: number) => void
-): PageProps[] {
-	const visiblePageRange = getVisiblePageRange(currentPage, visiblePage, fixedPage, totalPage);
-	const pages: PageProps[] = [];
-	if (visiblePageRange.from !== 1) {
-		range(1, fixedPage).forEach(index => {
-			pages.push({
-				index,
-				title: index,
-				classNames: [DefaultClassName.PAGE],
-				selected: index === currentPage,
-				onPageClick
-			});
-		});
-		pages.push({
-			index,
-			title: index,
-			classNames: [DefaultClassName.PAGE_ELLIPSIS]
-		});
-	}
-	range(visiblePageRange.from, visiblePageRange.to).forEach(index => {
-		pages.push({
-			index,
-			title: index,
-			classNames: [DefaultClassName.PAGE],
-			selected: index === currentPage,
-			onPageClick
-		});
-	});
-	if (visiblePageRange.to !== totalPage) {
-		pages.push({
-			index,
-			title: index,
-			classNames: [DefaultClassName.PAGE_ELLIPSIS]
-		});
-		range(totalPage - fixedPage - 1, _totalPage).forEach(index => {
-			pages.push({
-				index,
-				title: index,
-				classNames: [DefaultClassName.PAGE],
-				selected: index === currentPage,
-				onPageClick
-			});
-		});
-	}
-	return pages;
+interface PageProps extends React.Props<{}> {
+		title: string;
+		className: string;
+		index?: number;
+		disabled?: boolean;
+		selected?: boolean;
+		onClick?(page: number);
+		onMouseOver?(page: number);
+		onMouseOut?(page: number);
 }
+
+const Page: React.StatelessComponent<PageProps> = props => {
+
+	function getClassNames() {
+		const classNames = [ props.className ];
+		if (props.disabled) {
+			classNames.push(ClassName.PAGE_DISABLED);
+		}
+		if (props.selected) {
+			classNames.push(ClassName.PAGE_SELECTED);
+		}
+		return classNames.join(' ');
+	}
+
+	function handleClick(e) {
+		if (!props.disabled && !props.selected) {
+			props.onClick(props.index);
+		}
+	}
+
+	function handleMouseOver(e) {
+		if (!props.disabled) {
+			props.onMouseOver(props.index);
+		}
+	}
+
+	function handleMouseOut(e) {
+		if (!props.disabled) {
+			props.onMouseOut(props.index);
+		}
+	}
+
+	return (
+		<li
+			className={getClassNames()}
+			onClick={handleClick}
+			onMouseOver={handleMouseOver}
+			onMouseOut={handleMouseOut}
+		>
+			<span>{props.title}</span>
+		</li>
+	)
+}
+
+Page.defaultProps.index = undefined;
+Page.defaultProps.disabled = false;
+Page.defaultProps.selected = false;
 
 export default TinyPager;
