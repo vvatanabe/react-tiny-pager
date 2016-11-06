@@ -10,14 +10,20 @@ namespace ClassName {
 	export const PAGE_DISABLED = 'react-tiny-pager-panel__page-disabled'
 }
 
+namespace PageKey {
+	export const PREV = 'prev';
+	export const NEXT = 'next';
+	export const ELLIPSIS = 'ellipsis';
+}
+
 export interface TinyPagerStateProps extends React.Props<{}> {
 	current?: number;
 }
 
 export interface TinyPagerDispatchProps extends React.Props<{}> {
 	onChangeTo?(page: number);
-	onMouseOverTo?(page: number);
-	onMouseOutTo?(page: number);
+	onMouseOverTo?(page: string);
+	onMouseOutTo?(page: string);
 }
 
 export type TinyPagerProps = {
@@ -56,11 +62,11 @@ const TinyPager: React.StatelessComponent<TinyPagerProps> = props => {
 		onChangeTo(newPage);
 	}
 
-	function handleMouseOver(page: number) {
+	function handleMouseOver(page: string) {
 		onMouseOverTo(page);
 	}
 
-	function handleMouseOut(page: number) {
+	function handleMouseOut(page: string) {
 		onMouseOutTo(page);
 	}
 
@@ -125,46 +131,32 @@ const TinyPager: React.StatelessComponent<TinyPagerProps> = props => {
 				pages.push({
 					title: `${index}`,
 					className: ClassName.PAGE,
-					selected: isSelected(index),
-					onClick: handlePrevPage,
-					onMouseOver: handleMouseOver,
-					onMouseOut: handleMouseOut
+					key:  `${index}`,
+					selected: isSelected(index)
 				});
 			});
 			pages.push({
 				title: titles.ellipsis,
-				className: ClassName.PAGE_ELLIPSIS,
-				onClick: handlePrevPage,
-				onMouseOver: handleMouseOver,
-				onMouseOut: handleMouseOut
+				className: ClassName.PAGE_ELLIPSIS
 			});
 		}
 		range(visibleRange.from, visibleRange.to).forEach(index => {
 			pages.push({
 				title: `${index}`,
 				className: ClassName.PAGE,
-				selected: isSelected(index),
-				onClick: handlePrevPage,
-				onMouseOver: handleMouseOver,
-				onMouseOut: handleMouseOut
+				selected: isSelected(index)
 			});
 		});
 		if (visibleRange.to !== total) {
 			pages.push({
 				title: titles.ellipsis,
-				className: ClassName.PAGE_ELLIPSIS,
-				onClick: handlePrevPage,
-				onMouseOver: handleMouseOver,
-				onMouseOut: handleMouseOut
+				className: ClassName.PAGE_ELLIPSIS
 			});
 			range(total - fixePages - 1, total).forEach(index => {
 				pages.push({
 					title: `${index}`,
 					className: ClassName.PAGE,
-					selected: isSelected(index),
-					onClick: handlePrevPage,
-					onMouseOver: handleMouseOver,
-					onMouseOut: handleMouseOut
+					selected: isSelected(index)
 				});
 			});
 		}
@@ -174,6 +166,7 @@ const TinyPager: React.StatelessComponent<TinyPagerProps> = props => {
 	return (
 		<ul className={ClassName.PANEL}>
 			<Page
+				key={PageKey.PREV}
 				title={titles.prev}
 				className={ClassName.PAGE_PREV}
 				disabled={isDisabled()}
@@ -182,11 +175,11 @@ const TinyPager: React.StatelessComponent<TinyPagerProps> = props => {
 				onMouseOut={handleMouseOut}
 				/>
 			{
-				createPagePropsCollection().map(pageProps => (
+				createPagePropsCollection().map(props => (
 					<Page
-						index={pageProps.index}
-						title={pageProps.title}
-						className={pageProps.className}
+						key={props.key}
+						title={props.title}
+						className={props.className}
 						onClick={handlePrevPage}
 						onMouseOver={handleMouseOver}
 						onMouseOut={handleMouseOut}
@@ -194,10 +187,13 @@ const TinyPager: React.StatelessComponent<TinyPagerProps> = props => {
 				))
 			}
 			<Page
-				title={props.titles.next}
+				key={PageKey.NEXT}
+				title={titles.next}
 				className={ClassName.PAGE_NEXT}
-				disabled={props.current === props.total}
-				onClick={handleNextPage}
+				disabled={isDisabled()}
+				onClick={handlePrevPage}
+				onMouseOver={handleMouseOver}
+				onMouseOut={handleMouseOut}
 				/>
 	</ul>
 	)
@@ -219,8 +215,8 @@ TinyPager.defaultProps.titles = {
 //   }
 // }
 
-function range(begin, end, interval = 1): number[] {
-	const r = [];
+function range(begin: number, end: number, interval = 1): number[] {
+	const r: number[] = [];
   for (let i = begin; i <= end; i += interval) {
     r.push(i);
   }
@@ -230,12 +226,12 @@ function range(begin, end, interval = 1): number[] {
 interface PageProps extends React.Props<{}> {
 		title: string;
 		className: string;
-		index?: number;
+		key?: string;
 		disabled?: boolean;
 		selected?: boolean;
 		onClick?(page: number);
-		onMouseOver?(page: number);
-		onMouseOut?(page: number);
+		onMouseOver?(page: string);
+		onMouseOut?(page: string);
 }
 
 const Page: React.StatelessComponent<PageProps> = props => {
@@ -253,19 +249,19 @@ const Page: React.StatelessComponent<PageProps> = props => {
 
 	function handleClick(e) {
 		if (!props.disabled && !props.selected) {
-			props.onClick(props.index);
+			props.onClick(Number(props.key));
 		}
 	}
 
 	function handleMouseOver(e) {
 		if (!props.disabled) {
-			props.onMouseOver(props.index);
+			props.onMouseOver(props.key);
 		}
 	}
 
 	function handleMouseOut(e) {
 		if (!props.disabled) {
-			props.onMouseOut(props.index);
+			props.onMouseOut(props.key);
 		}
 	}
 
@@ -281,8 +277,11 @@ const Page: React.StatelessComponent<PageProps> = props => {
 	)
 }
 
-Page.defaultProps.index = undefined;
+Page.defaultProps.key = undefined;
 Page.defaultProps.disabled = false;
 Page.defaultProps.selected = false;
+Page.defaultProps.onClick = page => {};
+Page.defaultProps.onMouseOver = page => {};
+Page.defaultProps.onMouseOut = page => {};
 
 export default TinyPager;
