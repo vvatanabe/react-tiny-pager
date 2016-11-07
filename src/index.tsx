@@ -31,9 +31,9 @@ export type TinyPagerProps = {
 	visiblePages?: number;
 	fixePages?: number;
 	titles?: {
-		prev?: string;
-		next?: string;
-		ellipsis?: string;
+		prev: string;
+		next: string;
+		ellipsis: string;
 	}
 } & TinyPagerStateProps & TinyPagerDispatchProps;
 
@@ -82,44 +82,48 @@ const TinyPager: React.StatelessComponent<TinyPagerProps> = props => {
 			return num % 2 === 0;
 	}
 
-	function calcVisibleRange(): {
-		from: number,
-		to: number
-	} {
-		const startEllipsisPoint = fixePages + 2;
-		const endEllipsisPoint = total - startEllipsisPoint;
-		const startDisplayPage = current - (isEven(visiblePages) ? visiblePages / 2 : Math.floor(visiblePages / 2));
-		const endDisplayPage = current + (isEven(visiblePages) ? visiblePages / 2 - 1 : Math.floor(visiblePages / 2));
-		if (startDisplayPage <= startEllipsisPoint && endEllipsisPoint < endDisplayPage) {
+	function calcVisibleRange(): { from: number, to: number } {
+		const ellipsis = {
+			head: fixePages + 2,
+			tail: total - fixePages + 2
+		}
+		const visible = {
+			head: current - (isEven(visiblePages) ? visiblePages / 2 : Math.floor(visiblePages / 2)),
+			tail: current + (isEven(visiblePages) ? visiblePages / 2 - 1 : Math.floor(visiblePages / 2))
+		}
+		if (visible.head <= ellipsis.head && ellipsis.tail < visible.tail) {
 				return {
 					from: 1,
 					to: total
 				}
-		} else if (startDisplayPage < 1 && endDisplayPage < endEllipsisPoint) {
+		}
+		if (visible.head < 1 && visible.tail < ellipsis.tail) {
 			return {
 				from: 1,
 				to: visiblePages
 			}
-		} else if (startDisplayPage <= startEllipsisPoint && endDisplayPage <= endEllipsisPoint) {
+		}
+		if (visible.head <= ellipsis.head && visible.tail <= ellipsis.tail) {
 			return {
 				from: 1,
-				to: endDisplayPage
+				to: visible.tail
 			}
-		} else if (startEllipsisPoint < startDisplayPage && props.total <= endDisplayPage) {
+		}
+		if (ellipsis.head < visible.head && props.total <= visible.tail) {
 			return {
 				from: total - props.visiblePages + 1,
 				to: total
 			}
-		} else if (startEllipsisPoint < startDisplayPage && endEllipsisPoint < endDisplayPage) {
+		}
+		if (ellipsis.head < visible.head && ellipsis.tail < visible.tail) {
 			return {
-				from: startDisplayPage,
+				from: visible.head,
 				to: total
 			}
-		} else {
-			return {
-				from: startDisplayPage,
-				to: endDisplayPage
-			}
+		}
+		return {
+			from: visible.head,
+			to: visible.tail
 		}
 	}
 
